@@ -1,0 +1,42 @@
+{
+    "manifest_version": 3,
+    "name": "Faster",
+    "version": "1.0.0",
+    "description": "A simple example of a chromium extension",
+    "icons": {
+        "16": "./icon.png",
+        "32": "./icon.png",
+        "48": "./icon.png",
+        "128": "./icon.png"
+    },
+    "background": {
+        "service_worker": "faster.js"
+    },
+    "action": {
+        "default_icon": {
+            "16": "./icon.png",
+            "32": "./icon.png",
+            "48": "./icon.png",
+            "128": "./icon.png"
+        },
+        "default_title": "Faster",
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*/*","file:///*"
+            ],
+            "js": ["base.js"
+                ,"./faster.js"
+            ]
+        }
+    ],
+    "permissions": [
+        "tabs",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "https://*/*"
+    ]
+}
