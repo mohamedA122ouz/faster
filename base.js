@@ -169,8 +169,8 @@ class Handle {
                     let videoRatio = Handle.v.clientWidth / Handle.v.clientHeight;
                     let screenRatio = window.screen.width / window.screen.height;
                     let scaleValue = videoRatio / screenRatio;
-                    if (scaleValue === parseInt(scaleValue)) {
-                        Handle.v.style.transform = `scale(${scaleValue})`;
+                    if (parseInt(scaleValue*1000) == (parseInt(scaleValue)*1000)) {
+                        Handle.v.style.transform = `scale(${parseInt(scaleValue)})`;
                     } else if (Handle.v.clientWidth > Handle.v.clientHeight) {
                         scaleValue = window.screen.width / Handle.v.clientWidth;
                         Handle.v.style.transform = `scale(${scaleValue})`;
