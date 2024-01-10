@@ -15,15 +15,17 @@ class Handle {
     static videos = null;
     static isEventsAdded = false;
     static readyToZoom = null;
+    static beforeWarnning = 4;
+    static WarnningFastIsFixed = 4;
     static BasicListener(e) {
-        if (e.code === "Period" && e.altKey) {
-            if (e.key !== ".") {
-                alert("convert your keyboard language to English (this bug will be fixed soon)");
-            }
-            e.preventDefault();
-            console.log("working");
-            refresh();
-        }
+        // if (e.code === "Period" && e.altKey) {
+        //     if (e.key !== ".") {
+        //         alert("convert your keyboard language to English (this bug will be fixed soon)");
+        //     }
+        //     e.preventDefault();
+        //     console.log("working");
+        //     refresh();
+        // }
         if (e.code === "KeyF" && e.altKey) {
             e.preventDefault();
             Handle.fast = prompt("fast/playback speed(integer):") || Handle.fast;
@@ -56,7 +58,10 @@ class Handle {
         if (e.code === "ControlLeft") {
             Handle.v.playbackRate = Handle.fast;
         }
-        if (e.altKey && e.code === "Comma") {
+        else if (e.code === "Tab" && e.ctrlKey) {
+            Handle.beforeWarnning = 4;
+        }
+        else if (e.altKey && e.code === "Comma") {
             Handle.defualtSpeed = Handle.fast;
             Handle.v.playbackRate = Handle.defualtSpeed;
         }
@@ -139,11 +144,23 @@ class Handle {
         }
     }
     static returnDefaultSpeed(e) {
-        if (e.key === "Control") {
+        if (e.code === "ControlLeft") {
+            if (Handle.fast === Handle.defualtSpeed) {
+                if (--Handle.WarnningFastIsFixed === 0) {
+                    alert("Warnning Your playback speed is equal to defualt one");
+                    Handle.WarnningFastIsFixed = 4;
+                }
+            }
             Handle.close = true;
             console.log("default speed:", Handle.defualtSpeed);
             console.log("fast speed:", Handle.fast);
             Handle.v.playbackRate = Handle.defualtSpeed;
+        }
+        else if (e.code === "ControlRight") {
+            if (--Handle.beforeWarnning === 0) {
+                alert("use Left control to speed up");
+                Handle.beforeWarnning = 4;
+            }
         }
     }
     static goFullScreen(e) {
@@ -151,10 +168,37 @@ class Handle {
             e.preventDefault();
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
+                if (e.target.parentElement === document.body) {
+                    let videoRatio = Handle.v.clientWidth / Handle.v.clientHeight;
+                    let screenRatio = window.screen.width / window.screen.height;
+                    let scaleValue = videoRatio / screenRatio;
+                    if (scaleValue === parseInt(scaleValue)) {
+                        Handle.v.style.transform = `scale(${scaleValue})`;
+                    } else if (Handle.v.clientWidth > Handle.v.clientHeight) {
+                        scaleValue = window.screen.width / Handle.v.clientWidth;
+                        Handle.v.style.transform = `scale(${scaleValue})`;
+                    } else if (Handle.v.clientWidth < Handle.v.clientHeight) {
+                        scaleValue = window.screen.height / Handle.v.clientHeight;
+                        Handle.v.style.transform = `scale(${scaleValue})`;
+                    } else {
+                        if (window.screen.width < window.screen.height) {
+                            scaleValue = window.screen.width / Handle.v.clientWidth;
+                            Handle.v.style.transform = `scale(${scaleValue})`;
+                        }
+                        else if (window.screen.width > window.screen.height) {
+                            scaleValue = window.screen.height / Handle.v.clientHeight;
+                            Handle.v.style.transform = `scale(${scaleValue})`;
+                        }
+                        else {
+                            scaleValue = window.screen.height / Handle.v.clientHeight;
+                            Handle.v.style.transform = `scale(${scaleValue})`;
+                        }
+                    }
+                }
             } else if (document.exitFullscreen) {
+                Handle.v.style.transform = `scale(1)`;
                 document.exitFullscreen();
             }
         }
     }
 }
-console.log(chrome);
