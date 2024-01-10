@@ -18,14 +18,11 @@ class Handle {
     static beforeWarnning = 4;
     static WarnningFastIsFixed = 4;
     static BasicListener(e) {
-        // if (e.code === "Period" && e.altKey) {
-        //     if (e.key !== ".") {
-        //         alert("convert your keyboard language to English (this bug will be fixed soon)");
-        //     }
-        //     e.preventDefault();
-        //     console.log("working");
-        //     refresh();
-        // }
+        if (e.code === "Period" && e.altKey) {
+            e.preventDefault();
+            console.log("working");
+            refresh();
+        }
         if (e.code === "KeyF" && e.altKey) {
             e.preventDefault();
             Handle.fast = prompt("fast/playback speed(integer):") || Handle.fast;
