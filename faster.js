@@ -39,13 +39,12 @@ catch {
 }
 let observer = new IntersectionObserver((e) => {
     Handle.zoomOnFirstClick = true;
-    // console.log(e[0].target);
     e.forEach(el => {
         if (el.isIntersecting) {
             Handle.v = el.target;
             Handle.readyToZoom = Handle.v;
             Handle.v.addEventListener("contextmenu", Handle.goFullScreen);
-            if(Handle.restoreOnFirst){
+            if (Handle.restoreOnFirst) {//funciton need to set at first time of intersection only
                 restoreVideoTime();
                 Handle.restoreOnFirst = false;
             }
@@ -56,6 +55,7 @@ let observer = new IntersectionObserver((e) => {
             }
         }
     });
+    Handle.mkVideoFitScreen2(new ScreenObject(document.body));
 }, { threshold: 0.6 });
 Handle.videos.forEach(element => {
     observer.observe(element);

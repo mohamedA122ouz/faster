@@ -1,3 +1,33 @@
+class ScreenObject {
+    obj = null;
+    /**
+     *@param {Object} object `document.body`
+     *@param {Object} object `window.screen`
+     **/
+    constructor(object) {
+        if (object === document.body || object === window.screen)
+            this.obj = object;
+        else console.error("Not allowed object");
+    }
+    getWidth() {
+        if (this.obj === document.body)
+            return this.obj.clientWidth;
+        else if (this.obj === window.screen)
+            return this.obj.width;
+        else {
+            console.error("ScreeObject not definded correctly");
+        }
+    };
+    getHeight() {
+        if (this.obj === document.body)
+            return this.obj.clientHeight;
+        else if (this.obj === window.screen)
+            return this.obj.height;
+        else {
+            console.error("ScreeObject not definded correctly");
+        }
+    };
+}
 class Handle {
     static v = null;
     static currentLeft = 0;
@@ -118,11 +148,9 @@ class Handle {
             Handle.scaled = false;
             Handle.scale = 1.2;
         }
-
         else if (e.shiftKey) {
             Handle.scale = prompt("enter scale value (1-6): ") || 2;
         }
-
     }
     static dragVideoAndZoomInOut(e) {
         if (e.altKey && Handle.scaled) {
@@ -137,12 +165,11 @@ class Handle {
             Handle.scale = Handle.scale >= 7 ? 7 : Handle.scale;
             Handle.readyToZoom.style.cssText += `transform:scale(${Handle.scale})`;
             Handle.scaled = true;
-
         }
     }
     static returnDefaultSpeed(e) {
         if (e.code === "ControlLeft") {
-            if (Handle.fast === Handle.defualtSpeed) {
+            if (Handle.fast === Handle.defualtSpeed && !Handle.v) {
                 if (--Handle.WarnningFastIsFixed === 0) {
                     alert("Warnning Your playback speed is equal to defualt one");
                     Handle.WarnningFastIsFixed = 4;
@@ -153,48 +180,63 @@ class Handle {
             console.log("fast speed:", Handle.fast);
             Handle.v.playbackRate = Handle.defualtSpeed;
         }
-        else if (e.code === "ControlRight") {
+        else if (e.code === "ControlRight" && !Handle.v) {
             if (--Handle.beforeWarnning === 0) {
                 alert("use Left control to speed up");
                 Handle.beforeWarnning = 4;
             }
         }
     }
-    static goFullScreen(e) {
+    /**@param {ScreenObject} screenObject */
+    static mkVideoFitScreen2(screenObject) {
+        if (Handle.v.parentElement === document.body) {
+            let defaultHeight = document.body.style.height;
+            document.body.style.height = "100vh";
+            let minScreenDimention = screenObject.getHeight() < screenObject.getWidth() ? screenObject.getHeight() : screenObject.getWidth();
+            let maxVideoDimention = Handle.v.clientHeight > Handle.v.clientWidth ? Handle.v.clientHeight : Handle.v.clientWidth;
+            // if (maxVideoDimention < minScreenDimention) {
+            let scaleHeight = screenObject.getHeight() / Handle.v.clientHeight;
+            let scaleWidth = screenObject.getWidth() / Handle.v.clientWidth;
+            let maxScale = (scaleHeight < scaleWidth ? scaleHeight : scaleWidth);
+            Handle.v.style.transform = `scale(${maxScale < 1.2 ? 1 : maxScale})`;
+            // }
+            document.body.style.height = defaultHeight;
+        }
+    }
+    static async goFullScreen(e) {
         if (e.altKey) {
+            let amount = 50;
             e.preventDefault();
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
-                if (e.target.parentElement === document.body) {
-                    let videoRatio = Handle.v.clientWidth / Handle.v.clientHeight;
-                    let screenRatio = window.screen.width / window.screen.height;
-                    let scaleValue = videoRatio / screenRatio;
-                    if (parseInt(scaleValue*1000) == (parseInt(scaleValue)*1000)) {
-                        Handle.v.style.transform = `scale(${parseInt(scaleValue)})`;
-                    } else if (Handle.v.clientWidth > Handle.v.clientHeight) {
-                        scaleValue = window.screen.width / Handle.v.clientWidth;
-                        Handle.v.style.transform = `scale(${scaleValue})`;
-                    } else if (Handle.v.clientWidth < Handle.v.clientHeight) {
-                        scaleValue = window.screen.height / Handle.v.clientHeight;
-                        Handle.v.style.transform = `scale(${scaleValue})`;
-                    } else {
-                        if (window.screen.width < window.screen.height) {
-                            scaleValue = window.screen.width / Handle.v.clientWidth;
-                            Handle.v.style.transform = `scale(${scaleValue})`;
+                await new Promise((accept, reject) => {
+                    let time = 0;
+                    let inter = setInterval(() => {
+                        if (document.fullscreenElement !== null) {
+                            clearInterval(inter);
+                            accept();
+                        } else if (time > 300000) {
+                            reject("promise Faild");
                         }
-                        else if (window.screen.width > window.screen.height) {
-                            scaleValue = window.screen.height / Handle.v.clientHeight;
-                            Handle.v.style.transform = `scale(${scaleValue})`;
-                        }
-                        else {
-                            scaleValue = window.screen.height / Handle.v.clientHeight;
-                            Handle.v.style.transform = `scale(${scaleValue})`;
-                        }
-                    }
-                }
+                        time += amount;
+                    }, amount);
+                });
+                Handle.mkVideoFitScreen2(new ScreenObject(window.screen));
             } else if (document.exitFullscreen) {
-                Handle.v.style.transform = `scale(1)`;
                 document.exitFullscreen();
+                await new Promise((accept, reject) => {
+                    let time = 0;
+                    let inter = setInterval(() => {
+                        if (document.fullscreenElement === null) {
+                            clearInterval(inter);
+                            accept();
+                        } else if (time > 300000) {
+                            reject("promise Faild");
+                        }
+                        time += amount;
+                    }, amount);
+                });
+                Handle.mkVideoFitScreen2(new ScreenObject(document.body));
             }
         }
     }
