@@ -29,6 +29,7 @@ class ScreenObject {
     };
 }
 class Handle {
+    static inputFileds = [];
     static v = null;
     static currentLeft = 0;
     static currentTop = 0;
@@ -42,6 +43,7 @@ class Handle {
     static close = true;
     static fast = 2;
     static seek = 5;
+    static oldDefaultSpeed = 0;
     static videos = null;
     static isEventsAdded = false;
     static readyToZoom = null;
@@ -89,6 +91,8 @@ class Handle {
             Handle.beforeWarnning = 4;
         }
         else if (e.altKey && e.code === "Comma") {
+            if (Handle.oldDefaultSpeed === 0)
+                Handle.oldDefaultSpeed = Handle.defualtSpeed;
             Handle.defualtSpeed = Handle.fast;
             Handle.v.playbackRate = Handle.defualtSpeed;
         }
@@ -107,11 +111,11 @@ class Handle {
         else if (e.code === "Digit0") {
             Handle.v.currentTime = 0;
         }
-        else if (e.key === "ArrowLeft") {
+        else if (e.key === "ArrowLeft" && !Handle.inputFileds.includes(e.target)) {
             e.preventDefault();
             Handle.v.currentTime -= Handle.seek;
         }
-        else if (e.key === "ArrowRight") {
+        else if (e.key === "ArrowRight" && !Handle.inputFileds.includes(e.target)) {
             e.preventDefault();
             Handle.v.currentTime += Handle.seek;
         }
@@ -148,7 +152,7 @@ class Handle {
             Handle.scaled = false;
             Handle.scale = 1.2;
         }
-        else if (e.shiftKey) {
+        else if (e.shiftKey && Handle.v) {
             Handle.scale = prompt("enter scale value (1-6): ") || 2;
         }
     }
@@ -167,7 +171,7 @@ class Handle {
             Handle.scaled = true;
         }
     }
-    static returnDefaultSpeed(e) {
+    static returnDefaultSpeedAndSwap(e) {
         if (e.code === "ControlLeft") {
             if (Handle.fast === Handle.defualtSpeed && !Handle.v) {
                 if (--Handle.WarnningFastIsFixed === 0) {
@@ -186,21 +190,31 @@ class Handle {
                 Handle.beforeWarnning = 4;
             }
         }
+        else if (e.code === "Comma" && e.altKey) {
+            Handle.fast = Handle.oldDefaultSpeed;
+            Handle.oldDefaultSpeed = 0;
+        }
     }
     /**@param {ScreenObject} screenObject */
     static mkVideoFitScreen2(screenObject) {
-        if (Handle.v.parentElement === document.body) {
-            let defaultHeight = document.body.style.height;
-            document.body.style.height = "100vh";
-            let minScreenDimention = screenObject.getHeight() < screenObject.getWidth() ? screenObject.getHeight() : screenObject.getWidth();
-            let maxVideoDimention = Handle.v.clientHeight > Handle.v.clientWidth ? Handle.v.clientHeight : Handle.v.clientWidth;
-            // if (maxVideoDimention < minScreenDimention) {
-            let scaleHeight = screenObject.getHeight() / Handle.v.clientHeight;
-            let scaleWidth = screenObject.getWidth() / Handle.v.clientWidth;
-            let maxScale = (scaleHeight < scaleWidth ? scaleHeight : scaleWidth);
-            Handle.v.style.transform = `scale(${maxScale < 1.2 ? 1 : maxScale})`;
-            // }
-            document.body.style.height = defaultHeight;
+        try {
+
+            if (Handle.v.parentElement === document.body) {
+                let defaultHeight = document.body.style.height;
+                document.body.style.height = "100vh";
+                let minScreenDimention = screenObject.getHeight() < screenObject.getWidth() ? screenObject.getHeight() : screenObject.getWidth();
+                let maxVideoDimention = Handle.v.clientHeight > Handle.v.clientWidth ? Handle.v.clientHeight : Handle.v.clientWidth;
+                // if (maxVideoDimention < minScreenDimention) {
+                let scaleHeight = screenObject.getHeight() / Handle.v.clientHeight;
+                let scaleWidth = screenObject.getWidth() / Handle.v.clientWidth;
+                let maxScale = (scaleHeight < scaleWidth ? scaleHeight : scaleWidth);
+                Handle.v.style.transform = `scale(${maxScale < 1.2 ? 1 : maxScale})`;
+                // }
+                document.body.style.height = defaultHeight;
+            }
+        }
+        catch{
+            console.log("Video did't load yet or no video exist")
         }
     }
     static async goFullScreen(e) {
@@ -238,6 +252,13 @@ class Handle {
                 });
                 Handle.mkVideoFitScreen2(new ScreenObject(document.body));
             }
+        }
+    }
+    static mousedown(e) {
+        let target = e.target;
+        console.log(target.isContentEditable);
+        if (target.isContentEditable && !Handle.inputFileds.includes(target)) {
+            Handle.inputFileds.push(target);
         }
     }
 }
