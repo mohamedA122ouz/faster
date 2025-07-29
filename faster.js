@@ -7,7 +7,7 @@ function saveToRestore() {
         sessionStorage.setItem("video", JSON.stringify(videoData));
     }
     catch (e) {
-        console.error(Error(e));
+        console.warn(e);
     }
 }
 function restoreVideoTime() {
@@ -18,7 +18,7 @@ function restoreVideoTime() {
         Handle.v.currentTime = +video[videoID];
     }
     catch (e) {
-        console.error(Error(e));
+        console.warn(e);
     }
 }
 function addBasicListener() {
@@ -26,6 +26,7 @@ function addBasicListener() {
         saveToRestore();
         return null;
     }
+    document.addEventListener("click", Handle.mousedown);
     document.addEventListener("keydown", Handle.BasicListener);
 }
 try {
@@ -46,6 +47,7 @@ let observer = new IntersectionObserver((e) => {
             Handle.v.addEventListener("contextmenu", Handle.goFullScreen);
             if (Handle.restoreOnFirst) {//funciton need to set at first time of intersection only
                 restoreVideoTime();
+                Handle.inputFileds = [...document.querySelectorAll("input")];
                 Handle.restoreOnFirst = false;
             }
             try {
@@ -65,19 +67,23 @@ Handle.videos.forEach(element => {
 
 function refresh() {
     Handle.videos = document.querySelectorAll("video");
-    console.log("refreshing");
-    console.log(Handle.videos);
+    //console.log("refreshing");
+    //console.log(Handle.videos);
     Handle.videos.forEach(element => {
         observer.observe(element);
     });
-
+    Handle.v.style.borderTop = "10px solid #ffaa00";
+    setTimeout(() => {
+        Handle.v.style.removeProperty("border-top");
+    }, 2000);
 };
 function eventsHandlers() {
     try {
         document.addEventListener("keydown", Handle.KeyBoard);
-        document.addEventListener("keyup", Handle.returnDefaultSpeed);
+        document.addEventListener("keyup", Handle.returnDefaultSpeedAndSwap);
         document.addEventListener("click", Handle.zoom);
         document.addEventListener("mousemove", Handle.dragVideoAndZoomInOut);
+        Handle.v.addEventListener("mousemove",(e)=>Handle.videoBottomPostion(e));
         Handle.isEventsAdded = true;
     }
     catch {

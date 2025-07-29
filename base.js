@@ -29,6 +29,7 @@ class ScreenObject {
     };
 }
 class Handle {
+    static inputFileds = [];
     static v = null;
     static currentLeft = 0;
     static currentTop = 0;
@@ -42,15 +43,17 @@ class Handle {
     static close = true;
     static fast = 2;
     static seek = 5;
+    static oldDefaultSpeed = 0;
     static videos = null;
     static isEventsAdded = false;
     static readyToZoom = null;
     static beforeWarnning = 4;
     static WarnningFastIsFixed = 4;
+    static ctrlClicked = false;
     static BasicListener(e) {
         if (e.code === "Period" && e.altKey) {
             e.preventDefault();
-            console.log("working");
+            //console.log("working");
             refresh();
         }
         if (e.code === "KeyF" && e.altKey) {
@@ -64,7 +67,7 @@ class Handle {
             Handle.seek = +Handle.seek;
         }
         if (e.code === "KeyV" && e.altKey) {
-            console.log(Handle.v);
+            //console.log(Handle.v);
             try {
                 Handle.v.style.borderTop = "10px solid #ffaa00";
                 setTimeout(() => {
@@ -85,33 +88,35 @@ class Handle {
         if (e.code === "ControlLeft") {
             Handle.v.playbackRate = Handle.fast;
         }
-        else if (e.code === "Tab" && e.ctrlKey) {
+        else if (e.code === "Tab" && Handle.ctrlClicked) {
             Handle.beforeWarnning = 4;
         }
         else if (e.altKey && e.code === "Comma") {
+            if (Handle.oldDefaultSpeed === 0)
+                Handle.oldDefaultSpeed = Handle.defualtSpeed;
             Handle.defualtSpeed = Handle.fast;
             Handle.v.playbackRate = Handle.defualtSpeed;
         }
         else if (e.code === "Backquote" && e.altKey) {
             Handle.fast = 1.5;
-            console.log("fast", Handle.fast);
+            //console.log("fast", Handle.fast);
         }
         else if (e.code === "Digit2" && e.altKey) {
             Handle.fast = 2;
-            console.log("fast", Handle.fast);
+            //console.log("fast", Handle.fast);
         }
         else if (e.code === "Digit1" && e.altKey) {
             Handle.fast = 1;
-            console.log("fast", Handle.fast);
+            //console.log("fast", Handle.fast);
         }
         else if (e.code === "Digit0") {
             Handle.v.currentTime = 0;
         }
-        else if (e.key === "ArrowLeft") {
+        else if (e.key === "ArrowLeft" && !Handle.inputFileds.includes(e.target)) {
             e.preventDefault();
             Handle.v.currentTime -= Handle.seek;
         }
-        else if (e.key === "ArrowRight") {
+        else if (e.key === "ArrowRight" && !Handle.inputFileds.includes(e.target)) {
             e.preventDefault();
             Handle.v.currentTime += Handle.seek;
         }
@@ -148,7 +153,7 @@ class Handle {
             Handle.scaled = false;
             Handle.scale = 1.2;
         }
-        else if (e.shiftKey) {
+        else if (e.shiftKey && Handle.v) {
             Handle.scale = prompt("enter scale value (1-6): ") || 2;
         }
     }
@@ -167,7 +172,7 @@ class Handle {
             Handle.scaled = true;
         }
     }
-    static returnDefaultSpeed(e) {
+    static returnDefaultSpeedAndSwap(e) {
         if (e.code === "ControlLeft") {
             if (Handle.fast === Handle.defualtSpeed && !Handle.v) {
                 if (--Handle.WarnningFastIsFixed === 0) {
@@ -176,31 +181,39 @@ class Handle {
                 }
             }
             Handle.close = true;
-            console.log("default speed:", Handle.defualtSpeed);
-            console.log("fast speed:", Handle.fast);
+            //console.log("default speed:", Handle.defualtSpeed);
+            //console.log("fast speed:", Handle.fast);
             Handle.v.playbackRate = Handle.defualtSpeed;
+            Handle.ctrlClicked = false;
         }
         else if (e.code === "ControlRight" && !Handle.v) {
             if (--Handle.beforeWarnning === 0) {
                 alert("use Left control to speed up");
                 Handle.beforeWarnning = 4;
             }
+
+        }
+        else if (e.code === "Comma" && e.altKey) {
+            Handle.fast = Handle.oldDefaultSpeed;
+            Handle.oldDefaultSpeed = 0;
         }
     }
     /**@param {ScreenObject} screenObject */
     static mkVideoFitScreen2(screenObject) {
-        if (Handle.v.parentElement === document.body) {
-            let defaultHeight = document.body.style.height;
-            document.body.style.height = "100vh";
-            let minScreenDimention = screenObject.getHeight() < screenObject.getWidth() ? screenObject.getHeight() : screenObject.getWidth();
-            let maxVideoDimention = Handle.v.clientHeight > Handle.v.clientWidth ? Handle.v.clientHeight : Handle.v.clientWidth;
-            // if (maxVideoDimention < minScreenDimention) {
-            let scaleHeight = screenObject.getHeight() / Handle.v.clientHeight;
-            let scaleWidth = screenObject.getWidth() / Handle.v.clientWidth;
-            let maxScale = (scaleHeight < scaleWidth ? scaleHeight : scaleWidth);
-            Handle.v.style.transform = `scale(${maxScale < 1.2 ? 1 : maxScale})`;
-            // }
-            document.body.style.height = defaultHeight;
+        try {
+
+            if (Handle.v.parentElement === document.body) {
+                let defaultHeight = document.body.style.height;
+                document.body.style.height = "100vh";
+                let scaleHeight = screenObject.getHeight() / Handle.v.clientHeight;
+                let scaleWidth = screenObject.getWidth() / Handle.v.clientWidth;
+                let maxScale = (scaleHeight < scaleWidth ? scaleHeight : scaleWidth);
+                Handle.v.style.transform = `scale(${maxScale < 1.2 ? 1 : maxScale})`;
+                document.body.style.height = defaultHeight;
+            }
+        }
+        catch {
+            //console.log("Video did't load yet or no video exist")
         }
     }
     static async goFullScreen(e) {
@@ -238,6 +251,23 @@ class Handle {
                 });
                 Handle.mkVideoFitScreen2(new ScreenObject(document.body));
             }
+        }
+    }
+    static mousedown(e) {
+        let target = e.target;
+        if (target.isContentEditable && !Handle.inputFileds.includes(target)) {
+            Handle.inputFileds.push(target);
+        }
+    }
+    videoBottomPostion(mouseEvent) {
+        let left = Handle.v.offsetLeft;
+        let timePerPixel = Handle.v.duration / v.offsetWidth;
+        let height = Handle.v.offsetHeight;
+        let top = Handle.v.offsetTop + height - (height * 0.05);
+        let mouseTimer = mouseEvent.x - left;
+        let mouseTop = mouseEvent.y;
+        if ((mouseTop - top) >= (height * 0.005)) {
+            //console.log("workingProberly", mouseTimer * timePerPixel)
         }
     }
 }
